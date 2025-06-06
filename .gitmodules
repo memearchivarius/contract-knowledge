@@ -1,0 +1,3 @@
+[submodule "ton-sdk-compare"]
+	path = ton-sdk-compare
+	url = https://github.com/memearchivarius/ton-sdk-compare.git
