@@ -1,3 +1,6 @@
 [submodule "ton-sdk-compare"]
 	path = ton-sdk-compare
 	url = https://github.com/memearchivarius/ton-sdk-compare.git
+[submodule "ton-hash-examples"]
+	path = ton-hash-examples
+	url = https://github.com/memearchivarius/ton-hash-examples.git
