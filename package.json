@@ -4,5 +4,8 @@
     "bin": {
         "blueprint": ".vscode/override.js"
     },
-    "description": ""
+    "description": "",
+    "dependencies": {
+        "@ton/ton": "^15.2.1"
+    }
 }

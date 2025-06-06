@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TON Hash Examples - Real Wallet Implementation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #0088CC;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        .section h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        
+        button {
+            background: #0088CC;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #006699;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .output {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.testnet {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ffeaa7;
+            margin: 10px 0;
+        }
+        
+        .hash-display {
+            background: #e8f4f8;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            word-break: break-all;
+            margin: 5px 0;
+        }
+        
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧮 TON Hash Examples</h1>
+        <p style="text-align: center; color: #666;">
+            Реальные примеры работы с хэшами в TON блокчейне используя testnet кошелек
+        </p>
+        
+        <!-- TON Connect Section -->
+        <div class="section">
+            <h3>📱 Подключение кошелька</h3>
+            <div id="ton-connect"></div>
+            <div id="wallet-status" class="status disconnected">
+                Кошелек не подключен
+            </div>
+            <div class="warning">
+                ⚠️ Обязательно переключитесь на <strong>testnet</strong> в настройках кошелька!
+            </div>
+        </div>
+        
+        <!-- Examples Grid -->
+        <div class="example-grid">
+            <!-- Example 1: Message Body Hash -->
+            <div class="section">
+                <h3>1️⃣ Хэш тела сообщения</h3>
+                <p>Создание стандартного сообщения "Hello TON!" и получение его хэша</p>
+                <button onclick="createMessageBody()">Создать сообщение</button>
+                <div id="message-output" class="output" style="display: none;"></div>
+            </div>
+            
+            <!-- Example 2: Normalized Hash -->
+            <div class="section">
+                <h3>2️⃣ Нормализованный хэш</h3>
+                <p>Создание нормализованного external сообщения согласно TEP-467</p>
+                <button onclick="createNormalizedHash()" disabled id="normalized-btn">
+                    Создать нормализованный хэш
+                </button>
+                <div id="normalized-output" class="output" style="display: none;"></div>
+            </div>
+            
+            <!-- Example 3: Send Transaction -->
+            <div class="section">
+                <h3>3️⃣ Отправка транзакции</h3>
+                <p>Реальная отправка транзакции в testnet и получение хэша</p>
+                <button onclick="sendTransaction()" disabled id="send-btn">
+                    Отправить транзакцию
+                </button>
+                <div id="transaction-output" class="output" style="display: none;"></div>
+            </div>
+            
+            <!-- Example 4: Find Transaction -->
+            <div class="section">
+                <h3>4️⃣ Поиск по BOC</h3>
+                <p>Поиск транзакции в блокчейне по BOC</p>
+                <button onclick="findTransaction()" disabled id="find-btn">
+                    Найти транзакцию
+                </button>
+                <div id="find-output" class="output" style="display: none;"></div>
+            </div>
+        </div>
+        
+        <!-- Hash Display Section -->
+        <div class="section" id="hashes-section" style="display: none;">
+            <h3>🔗 Полученные хэши</h3>
+            <div id="hashes-display"></div>
+        </div>
+        
+        <!-- Documentation Link -->
+        <div style="text-align: center; margin-top: 30px; color: #666;">
+            <p>
+                Основано на документации TON и референсе 
+                <a href="https://github.com/memearchivarius/ton-sdk-compare" target="_blank">ton-sdk-compare</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Include TON Connect UI and TON Core via CDN -->
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <script src="https://unpkg.com/@ton/core@latest/dist/index.js"></script>
+    
+    <script>
+        // Global state
+        let walletConnected = false;
+        let isTestnet = false;
+        let lastTransactionBoc = '';
+        let lastNormalizedHash = '';
+        let walletAddress = '';
+        let savedHashes = {
+            messageBody: '',
+            normalized: '',
+            transaction: ''
+        };
+        
+        // Initialize TON Connect
+        const tonConnectUI = new TONConnectUI({
+            manifestUrl: window.location.origin + '/tonconnect-manifest.json'
+        });
+        
+        // Mount TON Connect button
+        document.getElementById('ton-connect').appendChild(tonConnectUI.button);
+        
+        // Subscribe to wallet events
+        tonConnectUI.onStatusChange(wallet => {
+            updateWalletStatus(wallet);
+        });
+        
+        function updateWalletStatus(wallet) {
+            const statusDiv = document.getElementById('wallet-status');
+            
+            if (wallet) {
+                walletConnected = true;
+                isTestnet = wallet.account.chain === '-3';
+                walletAddress = wallet.account.address;
+                
+                const network = isTestnet ? 'testnet' : 'mainnet';
+                statusDiv.className = `status ${isTestnet ? 'testnet' : 'connected'}`;
+                statusDiv.textContent = `Подключен к ${network}. Адрес: ${walletAddress}`;
+                
+                // Enable buttons for testnet
+                if (isTestnet) {
+                    document.querySelectorAll('button[disabled]').forEach(btn => {
+                        if (btn.id !== 'ton-connect') {
+                            btn.disabled = false;
+                        }
+                    });
+                }
+                
+            } else {
+                walletConnected = false;
+                isTestnet = false;
+                walletAddress = '';
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = 'Кошелек не подключен';
+                
+                // Disable all buttons except connect
+                document.querySelectorAll('button').forEach(btn => {
+                    if (btn.id !== 'ton-connect') {
+                        btn.disabled = true;
+                    }
+                });
+            }
+        }
+        
+        function showOutput(elementId, text, show = true) {
+            const element = document.getElementById(elementId);
+            if (show) {
+                element.style.display = 'block';
+                element.textContent = text;
+            } else {
+                element.style.display = 'none';
+            }
+        }
+        
+        function addHash(type, hash) {
+            savedHashes[type] = hash;
+            updateHashesDisplay();
+        }
+        
+        function updateHashesDisplay() {
+            const hashesSection = document.getElementById('hashes-section');
+            const hashesDisplay = document.getElementById('hashes-display');
+            
+            let hasHashes = false;
+            let html = '';
+            
+            Object.entries(savedHashes).forEach(([type, hash]) => {
+                if (hash) {
+                    hasHashes = true;
+                    html += `
+                        <div class="hash-display">
+                            <strong>${type}:</strong><br>
+                            ${hash}
+                        </div>
+                    `;
+                }
+            });
+            
+            if (hasHashes) {
+                hashesSection.style.display = 'block';
+                hashesDisplay.innerHTML = html;
+            } else {
+                hashesSection.style.display = 'none';
+            }
+        }
+        
+        // Example functions
+        function createMessageBody() {
+            try {
+                console.log('=== Message Body Hash Example ===');
+                showOutput('message-output', 'Создание тела сообщения...');
+                
+                // Используем TON Core для создания сообщения
+                const messageBody = TonCore.beginCell()
+                    .storeUint(0, 32) // op = 0 (стандартный комментарий)
+                    .storeStringTail('Hello TON!')
+                    .endCell();
+
+                const bodyHash = messageBody.hash();
+                const bodyBoc = messageBody.toBoc().toString('base64');
+                
+                console.log('Message Body Hash:', bodyHash.toString('hex'));
+                console.log('Message Body BOC:', bodyBoc);
+                
+                const output = `=== Message Body Hash Example ===
+Message Body Hash: ${bodyHash.toString('hex')}
+Message Body BOC: ${bodyBoc}
+
+✓ Тело сообщения создано успешно!
+Это стандартный комментарий "Hello TON!" с op=0`;
+                
+                showOutput('message-output', output);
+                addHash('messageBody', bodyHash.toString('hex'));
+                
+                // Сохраняем для дальнейшего использования
+                window.lastMessageBody = messageBody;
+                
+            } catch (error) {
+                console.error('Error creating message body:', error);
+                showOutput('message-output', `Ошибка: ${error.message}`);
+            }
+        }
+        
+        function createNormalizedHash() {
+            if (!walletConnected || !isTestnet) {
+                showOutput('normalized-output', 'Требуется подключение testnet кошелька');
+                return;
+            }
+            
+            try {
+                console.log('=== Normalized External Message Hash Example ===');
+                showOutput('normalized-output', 'Создание нормализованного хэша...');
+                
+                // Создаем адрес кошелька
+                const destinationAddress = TonCore.Address.parse(walletAddress);
+                
+                // Создаем тело сообщения если его еще нет
+                if (!window.lastMessageBody) {
+                    createMessageBody();
+                }
+                
+                const bodyBoC = window.lastMessageBody.toBoc().toString('base64');
+                
+                // Создаем нормализованное external сообщение согласно TEP-467
+                const externalMessage = TonCore.beginCell()
+                    .storeUint(0b10, 2)                    // ext_msg prefix (10 in binary)
+                    .storeUint(0, 2)                       // src -> addr_none
+                    .storeAddress(destinationAddress)       // dest address
+                    .storeCoins(0)                         // import_fee:Grams -> 0
+                    .storeBit(false)                       // init:(Maybe (Either StateInit ^StateInit)) -> nothing$0
+                    .storeBit(true)                        // body:(Either X ^X) -> right$1
+                    .storeRef(TonCore.Cell.fromBase64(bodyBoC))    // Store body as reference
+                    .endCell();
+
+                const normalizedBoC = externalMessage.toBoc().toString("base64");
+                const normalizedHash = TonCore.Cell.fromBase64(normalizedBoC).hash();
+                
+                lastNormalizedHash = normalizedHash.toString('hex');
+                
+                console.log('Normalized External BOC:', normalizedBoC);
+                console.log('Normalized External Hash:', lastNormalizedHash);
+                
+                const output = `=== Normalized External Message Hash ===
+Normalized BOC: ${normalizedBoC}
+Normalized Hash: ${lastNormalizedHash}
+
+✓ Нормализованный хэш создан согласно TEP-467
+Этот хэш остается стабильным при переупаковке сообщения нодами`;
+                
+                showOutput('normalized-output', output);
+                addHash('normalized', lastNormalizedHash);
+                
+            } catch (error) {
+                console.error('Error creating normalized hash:', error);
+                showOutput('normalized-output', `Ошибка: ${error.message}`);
+            }
+        }
+        
+        function sendTransaction() {
+            if (!walletConnected || !isTestnet) {
+                showOutput('transaction-output', 'Требуется подключение testnet кошелька');
+                return;
+            }
+            
+            try {
+                console.log('=== Real Transaction Hash Example ===');
+                showOutput('transaction-output', 'Отправка транзакции...');
+                
+                // Создаем тело сообщения если его еще нет
+                if (!window.lastMessageBody) {
+                    createMessageBody();
+                }
+                
+                const messageBody = window.lastMessageBody;
+                const bodyBoc = messageBody.toBoc().toString('base64');
+                
+                console.log('Wallet Address:', walletAddress);
+                console.log('Created message body with hash:', messageBody.hash().toString('hex'));
+
+                // Создаем нормализованный хэш для отслеживания
+                if (!lastNormalizedHash) {
+                    createNormalizedHash();
+                }
+
+                // Подготавливаем транзакцию
+                const transaction = {
+                    validUntil: Math.floor(Date.now() / 1000) + 360,
+                    messages: [{
+                        address: walletAddress,
+                        amount: '10000000', // 0.01 TON
+                        payload: bodyBoc
+                    }]
+                };
+
+                console.log('Sending transaction...');
+                console.log('Transaction payload:', transaction);
+
+                // Отправляем транзакцию
+                tonConnectUI.sendTransaction(transaction)
+                    .then(result => {
+                        console.log('Transaction sent successfully!');
+                        console.log('Transaction BOC:', result.boc);
+                        
+                        lastTransactionBoc = result.boc;
+
+                        // Получаем хэш транзакции из BOC
+                        let transactionHash;
+                        try {
+                            const txCell = TonCore.Cell.fromBase64(result.boc);
+                            transactionHash = txCell.hash().toString('hex');
+                            console.log('Transaction Hash:', transactionHash);
+                        } catch (e) {
+                            console.log('Could not extract transaction hash from BOC:', e);
+                            transactionHash = 'N/A';
+                        }
+
+                        const output = `=== Real Transaction Hash Example ===
+Transaction BOC: ${result.boc}
+Transaction Hash: ${transactionHash}
+Normalized Hash: ${lastNormalizedHash}
+
+✓ Транзакция отправлена в testnet!
+Сумма: 0.01 TON
+Комментарий: "Hello TON!"`;
+
+                        showOutput('transaction-output', output);
+
+                        if (transactionHash !== 'N/A') {
+                            addHash('transaction', transactionHash);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Transaction failed:', error);
+                        showOutput('transaction-output', `Ошибка транзакции: ${error.message}`);
+                    });
+                
+            } catch (error) {
+                console.error('Transaction preparation failed:', error);
+                showOutput('transaction-output', `Ошибка: ${error.message}`);
+            }
+        }
+        
+        function findTransaction() {
+            if (!lastTransactionBoc) {
+                showOutput('find-output', 'Сначала отправьте транзакцию');
+                return;
+            }
+            
+            try {
+                console.log('=== Find Transaction by BOC Example ===');
+                showOutput('find-output', 'Поиск транзакции в блокчейне...');
+                
+                // Получаем хэш транзакции из BOC
+                const txCell = TonCore.Cell.fromBase64(lastTransactionBoc);
+                const txHash = txCell.hash().toString('hex');
+                console.log('Transaction BOC Hash:', txHash);
+                
+                // Запрос к TON Center API для поиска транзакции
+                const apiUrl = `https://testnet.toncenter.com/api/v2/getTransactions?address=${walletAddress}&limit=10`;
+                console.log('API URL:', apiUrl);
+                
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.ok && data.result.length > 0) {
+                            console.log('Found transactions:', data.result.length);
+                            
+                            // Ищем нашу транзакцию по хэшу
+                            let found = false;
+                            for (const tx of data.result) {
+                                const foundTxHash = tx.transaction_id.hash;
+                                console.log('Checking transaction hash:', foundTxHash);
+                                
+                                if (foundTxHash === txHash) {
+                                    console.log('Transaction found in blockchain! ✓');
+                                    
+                                    const output = `=== Transaction Found ===
+Found transaction hash: ${foundTxHash}
+
+✓ Транзакция найдена в блокчейне!
+Поиск выполнен через TON Center API`;
+                                    
+                                    showOutput('find-output', output);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!found) {
+                                const output = `=== Transaction Not Found ===
+Транзакция не найдена в последних 10 транзакциях.
+Возможно, она еще не попала в блок или нужно подождать.
+
+Transaction BOC Hash: ${txHash}`;
+                                showOutput('find-output', output);
+                            }
+                            
+                        } else {
+                            console.log('No transactions found for this address');
+                            showOutput('find-output', 'Транзакции не найдены для данного адреса');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error searching for transaction:', error);
+                        showOutput('find-output', `Ошибка поиска: ${error.message}`);
+                    });
+                
+            } catch (error) {
+                console.error('Error in findTransaction:', error);
+                showOutput('find-output', `Ошибка: ${error.message}`);
+            }
+        }
+        
+        console.log('TON Hash Examples loaded! Connect your testnet wallet to begin.');
+        console.log('Available functions: createMessageBody(), createNormalizedHash(), sendTransaction(), findTransaction()');
+        
+    </script>
+</body>
+</html> 
